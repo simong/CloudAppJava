@@ -23,6 +23,7 @@
 package com.cloudapp.rest;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,7 +42,6 @@ import org.apache.http.client.utils.URIUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -71,10 +71,14 @@ public class CloudApi {
   }
 
   /**
+   * Create a bookmark.
    * 
-   * {@inheritDoc}
-   * 
-   * @see com.cloudapp.rest.CloudApi#createBookmark(java.lang.String, java.lang.String)
+   * @param name
+   *          The name of the bookmark.
+   * @param url
+   *          The URL of the bookmark
+   * @return a JSONObject with the info that was return by the CloudApp servers.
+   * @throws CloudApiException
    */
   public JSONObject createBookmark(String name, String url) throws CloudApiException {
     HttpPost request = null;
@@ -127,13 +131,36 @@ public class CloudApi {
   }
 
   /**
+   * Upload a file to the CloudApp servers.
    * 
-   * {@inheritDoc}
+   * @param file
+   *          The file that should be stored.
+   * @return A JSONObject with the returned output from the CloudApp servers.
+   * @throws CloudApiException
+   */
+  public JSONObject uploadFile(File file) throws CloudApiException {
+    try {
+      CloudAppInputStream input = new CloudAppInputStream(file);
+      return uploadFile(input);
+    } catch (FileNotFoundException e) {
+      LOGGER.error("The provided file could not be found.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Upload a file to the CloudApp servers.
    * 
-   * @see com.cloudapp.rest.CloudApi#uploadFile(java.io.File)
+   * @param input
+   *          The inputstream that holds the content that should be stored on the server.
+   * @param filename
+   *          The name of this file. i.e.: README.txt
+   * @return A JSONObject with the returned output from the CloudApp servers.
+   * @throws CloudApiException
    */
   @SuppressWarnings("rawtypes")
-  public JSONObject uploadFile(File file) throws CloudApiException {
+  public JSONObject uploadFile(CloudAppInputStream stream)
+      throws CloudApiException {
     HttpGet keyRequest = null;
     HttpPost uploadRequest = null;
     try {
@@ -163,8 +190,7 @@ public class CloudApi {
 
         // Add the actual file.
         // We have to use the 'file' parameter for the S3 storage.
-        FileBody fileBody = new FileBody(file);
-        entity.addPart("file", fileBody);
+        entity.addPart("file", stream);
 
         uploadRequest = new HttpPost(url);
         uploadRequest.addHeader("Accept", "application/json");
@@ -174,11 +200,11 @@ public class CloudApi {
         // uploadMethod.setFollowRedirects(true);
         response = client.execute(uploadRequest);
         status = response.getStatusLine().getStatusCode();
+        body = EntityUtils.toString(response.getEntity());
         if (status == 200) {
-          body = EntityUtils.toString(response.getEntity());
           return new JSONObject(body);
         }
-        throw new CloudApiException(500, "Was unable to upload the file to amazon.", null);
+        throw new CloudApiException(status, "Was unable to upload the file to amazon:\n"+body, null);
 
       }
       throw new CloudApiException(500,
@@ -197,7 +223,6 @@ public class CloudApi {
       if (uploadRequest != null) {
         uploadRequest.abort();
       }
-
     }
   }
 

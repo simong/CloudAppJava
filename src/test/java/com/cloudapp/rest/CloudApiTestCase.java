@@ -38,7 +38,7 @@ public class CloudApiTestCase {
 
   @Before
   public void setUp() {
-    api = new CloudApi("Email", "Super secret password");
+    api = new CloudApi("email", "Super secret password");
   }
 
   @Test
@@ -50,7 +50,7 @@ public class CloudApiTestCase {
   @Test
   public void testFileUpload() throws CloudApiException, JSONException {
     JSONArray arr = api.getItems(1, 10, null, false);
-    int length = arr.length();
+    String name = arr.getJSONObject(0).getString("name");
 
     URL testFileURL = getClass().getResource("/test_file.txt");
     File testFile = new File(testFileURL.getPath());
@@ -64,20 +64,19 @@ public class CloudApiTestCase {
 
     // Assert that it is in our list.
     arr = api.getItems(1, 10, null, false);
-    Assert.assertEquals(length + 1, arr.length());
+    Assert.assertNotSame(name, arr.getJSONObject(0).get("name"));
 
     // Now delete it.
     api.deleteItem(item.getString("href"));
 
     // Make sure it's from our list.
     arr = api.getItems(1, 10, null, false);
-    Assert.assertEquals(length, arr.length());
+    Assert.assertEquals(name, arr.getJSONObject(0).get("name"));
   }
 
   @Test
   public void testBookmark() throws CloudApiException, JSONException {
     JSONObject o = api.createBookmark("My portfolio", "http://www.gaeremynck.com");
-    System.out.println(o.toString(4));
     Assert.assertEquals("My portfolio", o.getString("name"));
   }
 
