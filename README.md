@@ -8,18 +8,18 @@ Usage Example
     CloudApi api = new CloudApiImpl("Your email here", "Your password here");
 
     // Add a new bookmark
-    $api.createBookmark('Simon Gaeremynck's portfolio', 'gaeremynck.com');
+    JSONObject json = api.createBookmark('Simon Gaeremynck's portfolio', 'gaeremynck.com');
 
     // Add file
-    $api->uploadFile(new File("/path/to/file"));
+    JSONObject json = api.uploadFile(new File("/path/to/file"));
 
-    // Get items
-    JSONArray array = $api.getItems();
+    // Get the first 10 items, regardless of category who aren't in the trash.
+    JSONArray array = api.getItems(1, 10, null, false);
 
-    // Get item (http://cl.ly/bD5)
-    JSONObject = api.getItem('bD5');
+    // Get a specific item (http://cl.ly/bD5)
+    JSONObject json = api.getItem('bD5');
     
-    // Delete item (by href)
+    // Delete item (by 'href' value)
     api.deleteItem("http://my.cl.ly/items/1058986");
     
 
