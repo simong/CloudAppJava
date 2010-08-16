@@ -1,4 +1,4 @@
-CloudApp RESt APIs Java Wrapper
+CloudApp REST APIs Java Wrapper
 ===============================
 These set of Java classes allow you to easily talk to the CloudApp REST Apis.
 
@@ -26,6 +26,19 @@ Usage Example
 Requirements
 ------------
 Java
+Maven (only for building)
+
+
+Building
+--------
+A jar can be compiled trough maven by running the following command.
+`mvn clean install -Dmaven.test.skip`
+
+However, this will skip the unit tests.
+If you want to have the unit tests, you will need to fill 
+in your email and password in the CloudApiTestCase.java file.
+`mvn clean install`
+
 
 License
 -------
