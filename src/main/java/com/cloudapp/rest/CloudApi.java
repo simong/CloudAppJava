@@ -1,113 +1,338 @@
+/*
+ *  Copyright (c) 2010 Simon Gaeremynck <gaeremyncks@gmail.com>
+ *  
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ */
 package com.cloudapp.rest;
 
 import java.io.File;
-import java.io.InputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIUtils;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.impl.DefaultConnectionReuseStrategy;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface CloudApi {
+public class CloudApi {
+
+  private static final String HOST = "http://cl.ly/";
+  private static final Logger LOGGER = LoggerFactory.getLogger(CloudApi.class);
+
+  private DefaultHttpClient client;
+
+  public CloudApi(String mail, String pw) {
+    client = new DefaultHttpClient();
+    client.setReuseStrategy(new DefaultConnectionReuseStrategy());
+
+    // Try to authenticate.
+    AuthScope scope = new AuthScope("my.cl.ly", 80);
+    client.getCredentialsProvider().setCredentials(scope,
+        new UsernamePasswordCredentials(mail, pw));
+  }
 
   /**
-   * Add a bookmark.<br />
-   * Authentication is required.
    * 
-   * @param name
-   *          The name of your bookmark.
-   * @param url
-   *          The URL to which this bookmark should point.
-   * @return A JSONObject which contains the following:
+   * {@inheritDoc}
    * 
-   *         <pre>
-   *          {
-   *             "href": "http://my.cl.ly/items/1",
-   *             "name": "CloudApp",
-   *             "url": "http://cl.ly/d837",
-   *             "item_type": "bookmark",
-   *             "view_counter": 0,
-   *             "icon": "http://my.cl.ly/images/item_types/bookmark.png",
-   *             "redirect_url": "http://getcloudapp.com",
-   *             "created_at": "2010-04-01T12:00:00Z",
-   *             "updated_at": "2010-04-01T12:00:00Z"
-   *           }
-   * </pre>
+   * @see com.cloudapp.rest.CloudApi#createBookmark(java.lang.String, java.lang.String)
    */
-  public JSONObject createBookmark(String name, String url) throws CloudApiException;
+  public JSONObject createBookmark(String name, String url) throws CloudApiException {
+    HttpPost request = null;
+    try {
+      // Apparently we have to post a JSONObject ..
+      JSONObject item = new JSONObject();
+      item.put("name", name);
+      item.put("redirect_url", url);
+      JSONObject bodyObj = new JSONObject();
+      bodyObj.put("item", item);
+      String body = bodyObj.toString(2);
+      System.out.println(bodyObj.toString(2));
+
+      // Prepare the parameters
+      List<NameValuePair> nvps = new ArrayList<NameValuePair>();
+      nvps.add(new BasicNameValuePair("item[redirect_url]", url));
+      nvps.add(new BasicNameValuePair("item[name]", name));
+
+      // Prepare the request.
+      URI uri = URIUtils.createURI("http", "my.cl.ly", -1, "/items",
+          URLEncodedUtils.format(nvps, "UTF-8"), null);
+      request = new HttpPost(uri);
+      request.setHeader("Accept", "application/json");
+
+      // Fire it
+      HttpResponse response = client.execute(request);
+      int status = response.getStatusLine().getStatusCode();
+      body = EntityUtils.toString(response.getEntity());
+
+      // Only 200 means success.
+      if (status == 200) {
+        return new JSONObject(body);
+      }
+
+      throw new CloudApiException(status, body, null);
+    } catch (JSONException e) {
+      LOGGER.error("Error when trying to convert the return output to JSON.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } catch (IOException e) {
+      LOGGER.error("Unable to create bookmark.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } catch (URISyntaxException e) {
+      LOGGER.error("Unable to create bookmark.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } finally {
+      if (request != null) {
+        request.abort();
+      }
+    }
+  }
 
   /**
-   * Wrapper around {@link CloudApi#uploadFile(InputStream)}.
    * 
-   * @param file
-   *          The file that needs to be uploaded.
-   * @return
+   * {@inheritDoc}
    * 
-   *         <pre>
-   * {
-   *   "href": "http://my.cl.ly/items/3",
-   *   "name": "Screen shot 2010-04-01 at 12.00.00 AM.png",
-   *   "url": "http://cl.ly/6571",
-   *   "content_url": "http://cl.ly/6571/content",
-   *   "item_type": "image",
-   *   "view_counter": 0,
-   *   "icon": "http://my.cl.ly/images/item_types/image.png",
-   *   "remote_url":"http://f.cl.ly/items/3d7ba41682802c301150/Screen shot 2010-04-01 at 12.00.00 AM.png",
-   *   "created_at": "2010-04-01T12:00:00Z",
-   *   "updated_at": "2010-04-01T12:00:00Z"
-   * }
-   * 
-   * </pre>
+   * @see com.cloudapp.rest.CloudApi#uploadFile(java.io.File)
    */
-  public JSONObject uploadFile(File file) throws CloudApiException;
+  @SuppressWarnings("rawtypes")
+  public JSONObject uploadFile(File file) throws CloudApiException {
+    HttpGet keyRequest = null;
+    HttpPost uploadRequest = null;
+    try {
+      // Get a key for the file first.
+      keyRequest = new HttpGet("http://my.cl.ly/items/new");
+      keyRequest.addHeader("Accept", "application/json");
+
+      // Execute the request.
+      HttpResponse response = client.execute(keyRequest);
+      int status = response.getStatusLine().getStatusCode();
+      if (status == 200) {
+        String body = EntityUtils.toString(response.getEntity());
+        JSONObject json = new JSONObject(body);
+        String url = json.getString("url");
+        JSONObject params = json.getJSONObject("params");
+        // From the API docs
+        // Use this response to construct the upload. Each item in params becomes a
+        // separate parameter you'll need to post to url. Send the file as the parameter
+        // file.
+        MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
+        // Add all the plain parameters.
+        Iterator keys = params.keys();
+        while (keys.hasNext()) {
+          String key = (String) keys.next();
+          entity.addPart(key, new StringBody(params.getString(key)));
+        }
+
+        // Add the actual file.
+        // We have to use the 'file' parameter for the S3 storage.
+        FileBody fileBody = new FileBody(file);
+        entity.addPart("file", fileBody);
+
+        uploadRequest = new HttpPost(url);
+        uploadRequest.addHeader("Accept", "application/json");
+        uploadRequest.setEntity(entity);
+
+        // Perform the actual upload.
+        // uploadMethod.setFollowRedirects(true);
+        response = client.execute(uploadRequest);
+        status = response.getStatusLine().getStatusCode();
+        if (status == 200) {
+          body = EntityUtils.toString(response.getEntity());
+          return new JSONObject(body);
+        }
+        throw new CloudApiException(500, "Was unable to upload the file to amazon.", null);
+
+      }
+      throw new CloudApiException(500,
+          "Was unable to retrieve a key from CloudApp to upload a file.", null);
+
+    } catch (IOException e) {
+      LOGGER.error("Error when trying to upload a file.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } catch (JSONException e) {
+      LOGGER.error("Error when trying to convert the return output to JSON.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } finally {
+      if (keyRequest != null) {
+        keyRequest.abort();
+      }
+      if (uploadRequest != null) {
+        uploadRequest.abort();
+      }
+
+    }
+  }
 
   /**
-   * Retrieve the items of the authenticated user.
    * 
-   * @param page
-   *          For paginating, paginating starts at 1.
-   * @param itemsPerPage
-   *          Number of items on a page, the default is 5.
-   * @param type
-   *          Filter items by type, i.e: images, video, ..
-   * @param showDeleted
-   *          true = Only show the trashed ones, false = only show the non-trashed ones.
-   * @return <pre>
-   * [
-   * .., {
-   *   "href": "http://my.cl.ly/items/1",
-   *   "name": "CloudApp",
-   *   "url": "http://cl.ly/d837",
-   *   "item_type": "bookmark",
-   *   "view_counter": 42,
-   *   "icon": "http://my.cl.ly/images/item_types/bookmark.png",
-   *   "redirect_url": "http://getcloudapp.com",
-   *   "created_at": "2010-04-01T12:00:00Z",
-   *   "updated_at": "2010-04-01T12:00:00Z"
-   * }, 
-   * ..
-   * ]
-   * </pre>
-   * @throws CloudApiException
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.rest.CloudApi#getItems()
    */
   public JSONArray getItems(int page, int itemsPerPage, String type, boolean showDeleted)
-      throws CloudApiException;
+      throws CloudApiException {
+    HttpGet request = null;
+    try {
+      // Sanitize the parameters
+      if (page < 1) {
+        page = 1;
+      }
+      if (itemsPerPage < 1) {
+        itemsPerPage = 1;
+      }
+
+      // Prepare the list of parameters.
+      List<NameValuePair> nvps = new ArrayList<NameValuePair>();
+      nvps.add(new BasicNameValuePair("page", "" + page));
+      nvps.add(new BasicNameValuePair("per_page", "" + itemsPerPage));
+      if (type != null) {
+        nvps.add(new BasicNameValuePair("type", type));
+      }
+      nvps.add(new BasicNameValuePair("deleted", (showDeleted) ? "true" : "false"));
+
+      // Prepare the URI (the host and querystring.)
+      URI uri = URIUtils.createURI("http", "my.cl.ly", -1, "/items",
+          URLEncodedUtils.format(nvps, "UTF-8"), null);
+
+      // Prepare the request.
+      request = new HttpGet(uri);
+      request.addHeader("Accept", "application/json");
+
+      // Perform the request.
+      HttpResponse response = client.execute(request);
+      response.addHeader("Accept", "application/json");
+      int status = response.getStatusLine().getStatusCode();
+      String body = EntityUtils.toString(response.getEntity(), "UTF-8");
+
+      // We always need 200 for items retrieval.
+      if (status == 200) {
+        return new JSONArray(body);
+      }
+
+      // Anything else is a failure.
+      throw new CloudApiException(status, body, null);
+
+    } catch (IOException e) {
+      LOGGER.error("Error when trying to retrieve the items.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } catch (JSONException e) {
+      LOGGER.error("Error when trying to parse the response as JSON.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } catch (URISyntaxException e) {
+      LOGGER.error("Error when trying to retrieve the items.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } finally {
+      if (request != null) {
+        request.abort();
+      }
+    }
+  }
 
   /**
-   * Retrieve the information for a specific item.
    * 
-   * @param id
-   *          The id of the file you wish to retrieve more info for.
-   * @return JSONObject containing the information.
-   * @throws CloudApiException
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.rest.CloudApi#getItem(java.lang.String)
    */
-  public JSONObject getItem(String id) throws CloudApiException;
+  public JSONObject getItem(String id) throws CloudApiException {
+    // No need to be authenticated to retrieve this item.
+    HttpGet request = new HttpGet(HOST + id);
+    request.addHeader("Accept", "application/json");
+
+    try {
+      // Perform the actual GET.
+      HttpResponse response = client.execute(request);
+      int status = response.getStatusLine().getStatusCode();
+      String body = EntityUtils.toString(response.getEntity(), "UTF-8");
+
+      // We're really only interested in 200 responses.
+      if (status == 200) {
+        return new JSONObject(body);
+      }
+
+      // If the status is not 200, that means there is a failure.
+      throw new CloudApiException(status, body, null);
+
+    } catch (IOException e) {
+      LOGGER.error("Error when trying to retrieve an item.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } catch (JSONException e) {
+      LOGGER.error("Error when trying to parse the response as JSON.", e);
+      throw new CloudApiException(500, e.getMessage(), e);
+    } finally {
+      if (request != null) {
+        request.abort();
+      }
+    }
+
+  }
 
   /**
-   * Delete an item.
    * 
-   * @param id
-   *          The id of the item you wish to delete.
-   * @throws CloudApiException
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.rest.CloudApi#deleteItem(java.lang.String)
    */
-  public void deleteItem(String id) throws CloudApiException;
+  public void deleteItem(String href) throws CloudApiException {
+    HttpDelete request = null;
+    try {
+      // To delete an item we just have to a a DELETE request to http//my.cl.ly/id.
+      request = new HttpDelete(href);
+      HttpResponse response = client.execute(request);
+      int status = response.getStatusLine().getStatusCode();
+
+      // If it isn't a 302 it failed.
+      if (status != 302) {
+        String body = EntityUtils.toString(response.getEntity());
+        throw new CloudApiException(status, body, null);
+      }
+    } catch (IOException e) {
+      LOGGER.error("Error when trying to delete an item.", e);
+      throw new CloudApiException(500, e.getMessage(), null);
+    } finally {
+      if (request != null) {
+        request.abort();
+      }
+    }
+
+  }
 
 }
