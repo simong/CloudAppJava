@@ -159,8 +159,7 @@ public class CloudApi {
    * @throws CloudApiException
    */
   @SuppressWarnings("rawtypes")
-  public JSONObject uploadFile(CloudAppInputStream stream)
-      throws CloudApiException {
+  public JSONObject uploadFile(CloudAppInputStream stream) throws CloudApiException {
     HttpGet keyRequest = null;
     HttpPost uploadRequest = null;
     try {
@@ -174,12 +173,19 @@ public class CloudApi {
       if (status == 200) {
         String body = EntityUtils.toString(response.getEntity());
         JSONObject json = new JSONObject(body);
-        String url = json.getString("url");
-        JSONObject params = json.getJSONObject("params");
+
+        // If this is a free account, we could exceed the daily amount.
+        if (json.has("uploads_remaining") && json.getInt("uploads_remaining") == 0) {
+          throw new CloudApiException(403, "You have exceeded your number of uploads.",
+              null);
+        }
+
         // From the API docs
         // Use this response to construct the upload. Each item in params becomes a
         // separate parameter you'll need to post to url. Send the file as the parameter
         // file.
+        String url = json.getString("url");
+        JSONObject params = json.getJSONObject("params");
         MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
         // Add all the plain parameters.
         Iterator keys = params.keys();
@@ -204,7 +210,8 @@ public class CloudApi {
         if (status == 200) {
           return new JSONObject(body);
         }
-        throw new CloudApiException(status, "Was unable to upload the file to amazon:\n"+body, null);
+        throw new CloudApiException(status, "Was unable to upload the file to amazon:\n"
+            + body, null);
 
       }
       throw new CloudApiException(500,
@@ -297,9 +304,9 @@ public class CloudApi {
    * 
    * @see com.cloudapp.rest.CloudApi#getItem(java.lang.String)
    */
-  public JSONObject getItem(String id) throws CloudApiException {
+  public JSONObject getItem(String url) throws CloudApiException {
     // No need to be authenticated to retrieve this item.
-    HttpGet request = new HttpGet(HOST + id);
+    HttpGet request = new HttpGet(url);
     request.addHeader("Accept", "application/json");
 
     try {

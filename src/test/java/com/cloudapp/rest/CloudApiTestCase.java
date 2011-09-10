@@ -23,22 +23,38 @@
 package com.cloudapp.rest;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.util.Properties;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CloudApiTestCase {
 
+  private static String mail;
+  private static String password;
   private CloudApi api;
+
+  @BeforeClass
+  public static void beforeClass() throws IOException {
+    InputStream in = CloudApiTestCase.class.getResourceAsStream("/credentials.properties");
+    Properties props = new Properties();
+    props.load(in);
+
+    CloudApiTestCase.mail = props.getProperty("cred_mail", "alice@acme.com");
+    CloudApiTestCase.password = props.getProperty("cred_password", "supersecretpassword");
+  }
 
   @Before
   public void setUp() {
-    api = new CloudApi("email", "Super secret password");
+    api = new CloudApi(CloudApiTestCase.mail, CloudApiTestCase.password);
   }
 
   @Test
@@ -58,8 +74,8 @@ public class CloudApiTestCase {
     Assert.assertEquals("test_file.txt", o.getString("name"));
 
     // Fetch the info.
-    String id = o.getString("private_slug");
-    JSONObject item = api.getItem(id);
+    String url = o.getString("url");
+    JSONObject item = api.getItem(url);
     Assert.assertEquals("test_file.txt", item.getString("name"));
 
     // Assert that it is in our list.

@@ -6,3 +6,4 @@ m2-target/
 bin/
 .DS_Store
 target
+credentials.properties
