@@ -1,5 +1,7 @@
 package com.cloudapp.impl;
 
+import java.io.File;
+
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
@@ -157,5 +159,15 @@ public class CloudAppImpl implements CloudApp {
   public JSONArray getItems(int page, int perPage, Type type, boolean showDeleted,
       String source) throws CloudAppException {
     return items.getItems(page, perPage, type, showDeleted, source);
+  }
+
+  /**
+   * 
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.api.CloudAppItems#upload(java.io.File)
+   */
+  public JSONObject upload(File file) throws CloudAppException {
+    return items.upload(file);
   }
 }

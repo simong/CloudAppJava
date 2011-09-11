@@ -1,5 +1,7 @@
 package com.cloudapp.api;
 
+import java.io.File;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -57,4 +59,14 @@ public interface CloudAppItems {
    */
   public JSONArray getItems(int page, int perPage, Type type, boolean showDeleted,
       String source) throws CloudAppException;
+
+  /**
+   * 
+   * @see http://developer.getcloudapp.com/upload-file
+   * @param file
+   *          The file you wish to upload.
+   * @throws CloudAppException
+   * @return
+   */
+  public JSONObject upload(File file) throws CloudAppException;
 }
