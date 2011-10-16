@@ -26,11 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudapp.api.CloudAppException;
-import com.cloudapp.api.CloudAppItems;
 import com.cloudapp.api.model.CloudAppItem;
 import com.cloudapp.impl.model.CloudAppItemImpl;
 
-public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
+public class CloudAppItemsImpl extends CloudAppBase {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CloudAppItemsImpl.class);
   private static final String ITEMS_URL = MY_CL_LY + "/items";

@@ -6,18 +6,22 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.cloudapp.api.CloudAppAccount;
+import com.cloudapp.api.model.CloudAppAccount;
+import com.cloudapp.api.model.CloudAppAccount.DefaultSecurity;
+import com.cloudapp.api.model.CloudAppAccountStats;
 import com.cloudapp.api.CloudAppException;
+import com.cloudapp.impl.model.CloudAppAccountImpl;
+import com.cloudapp.impl.model.CloudAppAccountStatsImpl;
 
-public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount {
+public class AccountImpl extends CloudAppBase {
 
   private static final String REGISTER_URL = MY_CL_LY + "/register";
   private static final String ACCOUNT_URL = MY_CL_LY + "/account";
   private static final String ACCOUNT_STATS_URL = ACCOUNT_URL + "/stats";
   private static final String RESET_URL = MY_CL_LY + "/reset";
-  private static final Logger LOGGER = LoggerFactory.getLogger(CloudAppAccountImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AccountImpl.class);
 
-  protected CloudAppAccountImpl(DefaultHttpClient client) {
+  protected AccountImpl(DefaultHttpClient client) {
     super(client);
   }
 
@@ -27,14 +31,16 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * 
    * @see com.cloudapp.api.CloudAppAccount#setDefaultSecurity(com.cloudapp.api.CloudAppAccount.DefaultSecurity)
    */
-  public JSONObject setDefaultSecurity(DefaultSecurity security) throws CloudAppException {
+  public CloudAppAccount setDefaultSecurity(DefaultSecurity security)
+      throws CloudAppException {
     try {
       JSONObject json = new JSONObject();
       JSONObject user = new JSONObject();
       user.put("private_items", (security == DefaultSecurity.PRIVATE) ? true : false);
       json.put("user", user);
 
-      return (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      json = (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      return new CloudAppAccountImpl(json);
 
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
@@ -48,7 +54,7 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * 
    * @see com.cloudapp.api.CloudAppAccount#setEmail(java.lang.String, java.lang.String)
    */
-  public JSONObject setEmail(String newEmail, String currentPassword)
+  public CloudAppAccount setEmail(String newEmail, String currentPassword)
       throws CloudAppException {
     try {
       JSONObject json = new JSONObject();
@@ -57,7 +63,8 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
       user.put("current_password", currentPassword);
       json.put("user", user);
 
-      return (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      json = (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      return new CloudAppAccountImpl(json);
 
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
@@ -71,7 +78,7 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * 
    * @see com.cloudapp.api.CloudAppAccount#setPassword(java.lang.String, java.lang.String)
    */
-  public JSONObject setPassword(String newPassword, String currentPassword)
+  public CloudAppAccount setPassword(String newPassword, String currentPassword)
       throws CloudAppException {
     try {
       JSONObject json = new JSONObject();
@@ -80,7 +87,8 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
       user.put("current_password", currentPassword);
       json.put("user", user);
 
-      return (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      json = (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      return new CloudAppAccountImpl(json);
 
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
@@ -94,14 +102,14 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * 
    * @see com.cloudapp.api.CloudAppAccount#resetPassword(java.lang.String)
    */
-  public JSONObject resetPassword(String email) throws CloudAppException {
+  public void resetPassword(String email) throws CloudAppException {
     try {
       JSONObject json = new JSONObject();
       JSONObject user = new JSONObject();
       user.put("email", email);
       json.put("user", user);
 
-      return (JSONObject) executePost(RESET_URL, json.toString(), 200);
+      executePost(RESET_URL, json.toString(), 200);
 
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
@@ -116,7 +124,7 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * @see com.cloudapp.api.CloudAppAccount#createAccount(java.lang.String,
    *      java.lang.String, boolean)
    */
-  public JSONObject createAccount(String email, String password, boolean acceptTOS)
+  public CloudAppAccount createAccount(String email, String password, boolean acceptTOS)
       throws CloudAppException {
     try {
       JSONObject json = new JSONObject();
@@ -125,7 +133,8 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
       user.put("password", password);
       user.put("accept_tos", acceptTOS);
       json.put("user", user);
-      return (JSONObject) executePost(REGISTER_URL, json.toString(), 201);
+      json = (JSONObject) executePost(REGISTER_URL, json.toString(), 201);
+      return new CloudAppAccountImpl(json);
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
       throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
@@ -139,7 +148,7 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * @see com.cloudapp.api.CloudAppAccount#setCustomDomain(java.lang.String,
    *      java.lang.String)
    */
-  public JSONObject setCustomDomain(String domain, String domainHomePage)
+  public CloudAppAccount setCustomDomain(String domain, String domainHomePage)
       throws CloudAppException {
     try {
       JSONObject json = new JSONObject();
@@ -148,7 +157,8 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
       user.put("domain_home_page", domainHomePage);
       json.put("user", user);
 
-      return (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      json = (JSONObject) executePut(ACCOUNT_URL, json.toString(), 200);
+      return new CloudAppAccountImpl(json);
 
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
@@ -162,8 +172,9 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * 
    * @see com.cloudapp.api.CloudAppAccount#getAccountDetails()
    */
-  public JSONObject getAccountDetails() throws CloudAppException {
-    return (JSONObject) executeGet(ACCOUNT_URL);
+  public CloudAppAccount getAccountDetails() throws CloudAppException {
+    JSONObject json = (JSONObject) executeGet(ACCOUNT_URL);
+    return new CloudAppAccountImpl(json);
   }
 
   /**
@@ -172,7 +183,13 @@ public class CloudAppAccountImpl extends CloudAppBase implements CloudAppAccount
    * 
    * @see com.cloudapp.api.CloudAppAccount#getAccountStats()
    */
-  public JSONObject getAccountStats() throws CloudAppException {
-    return (JSONObject) executeGet(ACCOUNT_STATS_URL);
+  public CloudAppAccountStats getAccountStats() throws CloudAppException {
+    try {
+      JSONObject json = (JSONObject) executeGet(ACCOUNT_STATS_URL);
+      return new CloudAppAccountStatsImpl(json.getLong("items"), json.getLong("views"));
+    } catch (JSONException e) {
+      LOGGER.error("Something went wrong trying to handle JSON.", e);
+      throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
+    }
   }
 }

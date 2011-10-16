@@ -7,19 +7,21 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudapp.api.CloudApp;
 import com.cloudapp.api.CloudAppException;
+import com.cloudapp.api.model.CloudAppAccount;
+import com.cloudapp.api.model.CloudAppAccount.DefaultSecurity;
+import com.cloudapp.api.model.CloudAppAccountStats;
 import com.cloudapp.api.model.CloudAppItem;
 
 public class CloudAppImpl implements CloudApp {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CloudAppImpl.class);
 
-  private CloudAppAccountImpl account;
+  private AccountImpl account;
   private CloudAppItemsImpl items;
 
   public CloudAppImpl(String mail, String pw) {
@@ -32,14 +34,14 @@ public class CloudAppImpl implements CloudApp {
         new UsernamePasswordCredentials(mail, pw));
     LOGGER.debug("Authentication set.");
 
-    account = new CloudAppAccountImpl(client);
+    account = new AccountImpl(client);
     items = new CloudAppItemsImpl(client);
   }
 
   public CloudAppImpl() {
     DefaultHttpClient client = new DefaultHttpClient();
     client.setReuseStrategy(new DefaultConnectionReuseStrategy());
-    account = new CloudAppAccountImpl(client);
+    account = new AccountImpl(client);
     items = new CloudAppItemsImpl(client);
   }
 
@@ -49,7 +51,8 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppAccount#setDefaultSecurity(com.cloudapp.api.CloudAppAccount.DefaultSecurity)
    */
-  public JSONObject setDefaultSecurity(DefaultSecurity security) throws CloudAppException {
+  public CloudAppAccount setDefaultSecurity(DefaultSecurity security)
+      throws CloudAppException {
     return account.setDefaultSecurity(security);
   }
 
@@ -59,7 +62,7 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppAccount#setEmail(java.lang.String, java.lang.String)
    */
-  public JSONObject setEmail(String newEmail, String currentPassword)
+  public CloudAppAccount setEmail(String newEmail, String currentPassword)
       throws CloudAppException {
     return account.setEmail(newEmail, currentPassword);
   }
@@ -70,7 +73,7 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppAccount#setPassword(java.lang.String, java.lang.String)
    */
-  public JSONObject setPassword(String newPassword, String currentPassword)
+  public CloudAppAccount setPassword(String newPassword, String currentPassword)
       throws CloudAppException {
     return account.setPassword(newPassword, currentPassword);
   }
@@ -81,8 +84,8 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppAccount#resetPassword(java.lang.String)
    */
-  public JSONObject resetPassword(String email) throws CloudAppException {
-    return account.resetPassword(email);
+  public void resetPassword(String email) throws CloudAppException {
+    account.resetPassword(email);
   }
 
   /**
@@ -92,7 +95,7 @@ public class CloudAppImpl implements CloudApp {
    * @see com.cloudapp.api.CloudAppAccount#createAccount(java.lang.String,
    *      java.lang.String, boolean)
    */
-  public JSONObject createAccount(String email, String password, boolean acceptTOS)
+  public CloudAppAccount createAccount(String email, String password, boolean acceptTOS)
       throws CloudAppException {
     return account.createAccount(email, password, acceptTOS);
   }
@@ -104,7 +107,7 @@ public class CloudAppImpl implements CloudApp {
    * @see com.cloudapp.api.CloudAppAccount#setCustomDomain(java.lang.String,
    *      java.lang.String)
    */
-  public JSONObject setCustomDomain(String domain, String domainHomePage)
+  public CloudAppAccount setCustomDomain(String domain, String domainHomePage)
       throws CloudAppException {
     return account.setCustomDomain(domain, domainHomePage);
   }
@@ -115,7 +118,7 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppAccount#getAccountDetails()
    */
-  public JSONObject getAccountDetails() throws CloudAppException {
+  public CloudAppAccount getAccountDetails() throws CloudAppException {
     return account.getAccountDetails();
   }
 
@@ -125,7 +128,7 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppAccount#getAccountStats()
    */
-  public JSONObject getAccountStats() throws CloudAppException {
+  public CloudAppAccountStats getAccountStats() throws CloudAppException {
     return account.getAccountStats();
   }
 

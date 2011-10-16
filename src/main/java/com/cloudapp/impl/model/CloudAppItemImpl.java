@@ -1,20 +1,14 @@
 package com.cloudapp.impl.model;
 
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.cloudapp.api.CloudAppException;
 import com.cloudapp.api.model.CloudAppItem;
 
-public class CloudAppItemImpl implements CloudAppItem {
-
-  private JSONObject json;
-  private static final DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz");
+public class CloudAppItemImpl extends CloudAppModel implements CloudAppItem {
 
   public CloudAppItemImpl(JSONObject json) {
     this.json = json;
@@ -102,34 +96,6 @@ public class CloudAppItemImpl implements CloudAppItem {
       return format.parse(d);
     } catch (ParseException e) {
       throw new CloudAppException(500, "Could not parse the date.", e);
-    }
-  }
-
-  //
-  // Helper functions
-  //
-
-  private String getString(String key) throws CloudAppException {
-    try {
-      return json.getString(key);
-    } catch (JSONException e) {
-      throw new CloudAppException(500, e.getMessage(), e);
-    }
-  }
-
-  private boolean getBoolean(String key) throws CloudAppException {
-    try {
-      return json.getBoolean(key);
-    } catch (JSONException e) {
-      throw new CloudAppException(500, e.getMessage(), e);
-    }
-  }
-
-  private long getLong(String key) throws CloudAppException {
-    try {
-      return json.getLong(key);
-    } catch (JSONException e) {
-      throw new CloudAppException(500, e.getMessage(), e);
     }
   }
 
