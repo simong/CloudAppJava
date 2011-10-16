@@ -1,18 +1,19 @@
 package com.cloudapp.impl;
 
 import java.io.File;
+import java.util.List;
 
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudapp.api.CloudApp;
 import com.cloudapp.api.CloudAppException;
+import com.cloudapp.api.model.CloudAppItem;
 
 public class CloudAppImpl implements CloudApp {
 
@@ -135,7 +136,7 @@ public class CloudAppImpl implements CloudApp {
    * @see com.cloudapp.api.CloudAppItems#createBookmark(java.lang.String,
    *      java.lang.String)
    */
-  public JSONObject createBookmark(String name, String url) throws CloudAppException {
+  public CloudAppItem createBookmark(String name, String url) throws CloudAppException {
     return items.createBookmark(name, url);
   }
 
@@ -145,8 +146,19 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppItems#createBookmarks(java.lang.String[][])
    */
-  public JSONArray createBookmarks(String[][] bookmarks) throws CloudAppException {
+  public List<CloudAppItem> createBookmarks(String[][] bookmarks)
+      throws CloudAppException {
     return items.createBookmarks(bookmarks);
+  }
+
+  /**
+   * 
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.api.CloudAppItems#getItem(java.lang.String)
+   */
+  public CloudAppItem getItem(String url) throws CloudAppException {
+    return items.getItem(url);
   }
 
   /**
@@ -156,8 +168,8 @@ public class CloudAppImpl implements CloudApp {
    * @see com.cloudapp.api.CloudAppItems#getItems(int, int,
    *      com.cloudapp.api.CloudAppItems.Type, boolean, java.lang.String)
    */
-  public JSONArray getItems(int page, int perPage, Type type, boolean showDeleted,
-      String source) throws CloudAppException {
+  public List<CloudAppItem> getItems(int page, int perPage, CloudAppItem.Type type,
+      boolean showDeleted, String source) throws CloudAppException {
     return items.getItems(page, perPage, type, showDeleted, source);
   }
 
@@ -167,7 +179,51 @@ public class CloudAppImpl implements CloudApp {
    * 
    * @see com.cloudapp.api.CloudAppItems#upload(java.io.File)
    */
-  public JSONObject upload(File file) throws CloudAppException {
+  public CloudAppItem upload(File file) throws CloudAppException {
     return items.upload(file);
   }
+
+  /**
+   * 
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.api.CloudAppItems#delete(com.cloudapp.api.model.CloudAppItem)
+   */
+  public CloudAppItem delete(CloudAppItem item) throws CloudAppException {
+    return items.delete(item);
+  }
+
+  /**
+   * 
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.api.CloudAppItems#recover(com.cloudapp.api.model.CloudAppItem)
+   */
+  public CloudAppItem recover(CloudAppItem item) throws CloudAppException {
+    return items.recover(item);
+  }
+
+  /**
+   * 
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.api.CloudAppItems#setSecurity(com.cloudapp.api.model.CloudAppItem,
+   *      boolean)
+   */
+  public CloudAppItem setSecurity(CloudAppItem item, boolean is_private)
+      throws CloudAppException {
+    return items.setSecurity(item, is_private);
+  }
+
+  /**
+   * 
+   * {@inheritDoc}
+   * 
+   * @see com.cloudapp.api.CloudAppItems#rename(com.cloudapp.api.model.CloudAppItem,
+   *      java.lang.String)
+   */
+  public CloudAppItem rename(CloudAppItem item, String name) throws CloudAppException {
+    return items.rename(item, name);
+  }
+
 }

@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -42,6 +43,19 @@ public class CloudAppBase {
     HttpGet req = new HttpGet(url);
     return executeRequest(req, 200);
   }
+  
+  /**
+   * Executes a DELETE to a url.
+   * 
+   * @param url
+   * @return
+   * @throws CloudAppException
+   */
+  protected Object executeDelete(String url) throws CloudAppException {
+    HttpDelete req = new HttpDelete(url);
+    return executeRequest(req, 200);
+  }
+
 
   /**
    * Executes a POST to a url with a certain body.

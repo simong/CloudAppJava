@@ -2,7 +2,9 @@ package com.cloudapp.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
@@ -25,6 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import com.cloudapp.api.CloudAppException;
 import com.cloudapp.api.CloudAppItems;
+import com.cloudapp.api.model.CloudAppItem;
+import com.cloudapp.impl.model.CloudAppItemImpl;
 
 public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
 
@@ -43,11 +47,12 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
    * @see com.cloudapp.api.CloudAppItems#createBookmark(java.lang.String,
    *      java.lang.String)
    */
-  public JSONObject createBookmark(String name, String url) throws CloudAppException {
+  public CloudAppItem createBookmark(String name, String url) throws CloudAppException {
     try {
-      JSONObject json = new JSONObject();
-      json.put("item", createJSONBookmark(name, url));
-      return (JSONObject) executePost(ITEMS_URL, json.toString(), 200);
+      JSONObject json = createBody(new String[] { "name", "redirect_url" }, new String[] {
+          name, url });
+      json = (JSONObject) executePost(ITEMS_URL, json.toString(), 200);
+      return new CloudAppItemImpl(json);
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
       throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
@@ -60,15 +65,23 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
    * 
    * @see com.cloudapp.api.CloudAppItems#createBookmarks(java.lang.String[][])
    */
-  public JSONArray createBookmarks(String[][] bookmarks) throws CloudAppException {
+  public List<CloudAppItem> createBookmarks(String[][] bookmarks)
+      throws CloudAppException {
     try {
       JSONArray arr = new JSONArray();
       for (String[] bookmark : bookmarks) {
         arr.put(createJSONBookmark(bookmark[0], bookmark[1]));
       }
+
       JSONObject json = new JSONObject();
       json.put("items", arr);
-      return (JSONArray) executePost(ITEMS_URL, json.toString(), 200);
+      arr = (JSONArray) executePost(ITEMS_URL, json.toString(), 200);
+
+      List<CloudAppItem> items = new ArrayList<CloudAppItem>();
+      for (int i = 0; i < arr.length(); i++) {
+        items.add(new CloudAppItemImpl(arr.getJSONObject(i)));
+      }
+      return items;
     } catch (JSONException e) {
       LOGGER.error("Something went wrong trying to handle JSON.", e);
       throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
@@ -87,10 +100,10 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
    * {@inheritDoc}
    * 
    * @see com.cloudapp.api.CloudAppItems#getItems(int, int,
-   *      com.cloudapp.api.CloudAppItems.Type, boolean, java.lang.String)
+   *      com.cloudapp.api.CloudAppItem.Type, boolean, java.lang.String)
    */
-  public JSONArray getItems(int page, int perPage, Type type, boolean showDeleted,
-      String source) throws CloudAppException {
+  public List<CloudAppItem> getItems(int page, int perPage, CloudAppItem.Type type,
+      boolean showDeleted, String source) throws CloudAppException {
     try {
       if (perPage < 5)
         perPage = 5;
@@ -115,7 +128,12 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
       int status = response.getStatusLine().getStatusCode();
       String responseBody = EntityUtils.toString(response.getEntity());
       if (status == 200) {
-        return new JSONArray(responseBody);
+        JSONArray arr = new JSONArray(responseBody);
+        List<CloudAppItem> items = new ArrayList<CloudAppItem>();
+        for (int i = 0; i < arr.length(); i++) {
+          items.add(new CloudAppItemImpl(arr.getJSONObject(i)));
+        }
+        return items;
       }
 
       throw new CloudAppException(status, responseBody, null);
@@ -139,7 +157,7 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
    * 
    * @see com.cloudapp.api.CloudAppItems#upload(java.io.File)
    */
-  public JSONObject upload(File file) throws CloudAppException {
+  public CloudAppItem upload(File file) throws CloudAppException {
     try {
       // Do a GET request so we have the S3 endpoint
       HttpGet req = new HttpGet(NEW_ITEM_URL);
@@ -154,7 +172,7 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
       if (!json.has("params")) {
         // Something went wrong, maybe we crossed the treshold?
         if (json.getInt("uploads_remaining") == 0) {
-          throw new CloudAppException(200, json.getString("message"), null);
+          throw new CloudAppException(200, "Uploads remaining is 0", null);
         }
         throw new CloudAppException(500, "Missing params object from the CloudApp API.",
             null);
@@ -187,7 +205,7 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
    * @throws ParseException
    * @throws IOException
    */
-  private JSONObject uploadToAmazon(JSONObject json, File file) throws JSONException,
+  private CloudAppItem uploadToAmazon(JSONObject json, File file) throws JSONException,
       CloudAppException, ParseException, IOException {
     JSONObject params = json.getJSONObject("params");
     MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
@@ -214,9 +232,67 @@ public class CloudAppItemsImpl extends CloudAppBase implements CloudAppItems {
     int status = response.getStatusLine().getStatusCode();
     String body = EntityUtils.toString(response.getEntity());
     if (status == 200) {
-      return new JSONObject(body);
+      return new CloudAppItemImpl(new JSONObject(body));
     }
     throw new CloudAppException(status, "Was unable to upload the file to amazon:\n"
         + body, null);
   }
+
+  public CloudAppItem delete(CloudAppItem item) throws CloudAppException {
+    JSONObject o = (JSONObject) executeDelete(item.getHref());
+    return new CloudAppItemImpl(o);
+  }
+
+  public CloudAppItem recover(CloudAppItem item) throws CloudAppException {
+    try {
+      JSONObject json = createBody(new String[] { "deleted_at" },
+          new Object[] { JSONObject.NULL });
+      json.put("deleted", true);
+      json = (JSONObject) executePut(item.getHref(), json.toString(), 200);
+      return new CloudAppItemImpl(json);
+    } catch (JSONException e) {
+      LOGGER.error("Something went wrong trying to handle JSON.", e);
+      throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
+    }
+  }
+
+  public CloudAppItem setSecurity(CloudAppItem item, boolean is_private)
+      throws CloudAppException {
+    try {
+      JSONObject json = createBody(new String[] { "private" },
+          new Object[] { is_private });
+      json = (JSONObject) executePut(item.getHref(), json.toString(), 200);
+      return new CloudAppItemImpl(json);
+    } catch (JSONException e) {
+      LOGGER.error("Something went wrong trying to handle JSON.", e);
+      throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
+    }
+  }
+
+  public CloudAppItem rename(CloudAppItem item, String name) throws CloudAppException {
+    try {
+      JSONObject json = createBody(new String[] { "name" }, new Object[] { name });
+      json = (JSONObject) executePut(item.getHref(), json.toString(), 200);
+      return new CloudAppItemImpl(json);
+    } catch (JSONException e) {
+      LOGGER.error("Something went wrong trying to handle JSON.", e);
+      throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
+    }
+  }
+
+  public CloudAppItem getItem(String url) throws CloudAppException {
+    JSONObject json = (JSONObject) executeGet(url);
+    return new CloudAppItemImpl(json);
+  }
+
+  private JSONObject createBody(String[] keys, Object[] values) throws JSONException {
+    JSONObject json = new JSONObject();
+    JSONObject item = new JSONObject();
+    for (int i = 0; i < keys.length; i++) {
+      item.put(keys[i], values[i]);
+    }
+    json.put("item", item);
+    return json;
+  }
+
 }

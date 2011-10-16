@@ -1,9 +1,9 @@
 package com.cloudapp.api;
 
 import java.io.File;
+import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.cloudapp.api.model.CloudAppItem;
 
 public interface CloudAppItems {
 
@@ -18,7 +18,7 @@ public interface CloudAppItems {
    * @throws CloudAppException
    * @return
    */
-  public JSONObject createBookmark(String name, String url) throws CloudAppException;
+  public CloudAppItem createBookmark(String name, String url) throws CloudAppException;
 
   /**
    * Create multiple bookmarks in a single request.
@@ -30,11 +30,19 @@ public interface CloudAppItems {
    * @throws CloudAppException
    * @return
    */
-  public JSONArray createBookmarks(String[][] bookmarks) throws CloudAppException;
+  public List<CloudAppItem> createBookmarks(String[][] bookmarks)
+      throws CloudAppException;
 
-  public enum Type {
-    ARCHIVE, AUDIO, BOOKMARK, IMAGE, TEXT, UNKNOWN, VIDEO
-  }
+  /**
+   * Get metadata about a cl.ly URL.
+   * 
+   * @see http://developer.getcloudapp.com/view-item
+   * @param url
+   *          The url
+   * @return
+   * @throws CloudAppException
+   */
+  public CloudAppItem getItem(String url) throws CloudAppException;
 
   /**
    * Page through your items.
@@ -45,7 +53,7 @@ public interface CloudAppItems {
    * @param perPage
    *          Number of items per page (minimum=5)
    * @param type
-   *          (Optional) One of the avaiable {@link Type types}
+   *          (Optional) One of the avaiable {@link CloudAppItem.Type types}
    * @param showDeleted
    *          Include the trashed items?
    * @param source
@@ -54,11 +62,11 @@ public interface CloudAppItems {
    *          that User-Agent as their source. To list only the items created using the
    *          Mac app, use the parameter source=Cloud. Get fancy and list only the items
    *          created using a specific version of with source=Cloud/1.5.1.
-   * @return A JSONArray with your items.
+   * @return A list with your items.
    * @throws CloudAppException
    */
-  public JSONArray getItems(int page, int perPage, Type type, boolean showDeleted,
-      String source) throws CloudAppException;
+  public List<CloudAppItem> getItems(int page, int perPage, CloudAppItem.Type type,
+      boolean showDeleted, String source) throws CloudAppException;
 
   /**
    * 
@@ -68,5 +76,45 @@ public interface CloudAppItems {
    * @throws CloudAppException
    * @return
    */
-  public JSONObject upload(File file) throws CloudAppException;
+  public CloudAppItem upload(File file) throws CloudAppException;
+
+  /**
+   * Deletes an item
+   * 
+   * @param item
+   *          The item to delete
+   * @throws CloudAppException
+   */
+  public CloudAppItem delete(CloudAppItem item) throws CloudAppException;
+
+  /**
+   * Recover an item in the trash
+   * 
+   * @param item
+   *          The item to recover
+   * @throws CloudAppException
+   */
+  public CloudAppItem recover(CloudAppItem item) throws CloudAppException;
+
+  /**
+   * Makes an item either public or private.
+   * 
+   * @param item
+   * @param is_private
+   *          true=private, false=public.
+   * @throws CloudAppException
+   * @return
+   */
+  public CloudAppItem setSecurity(CloudAppItem item, boolean is_private)
+      throws CloudAppException;
+
+  /**
+   * Change the name of an item
+   * 
+   * @param item
+   * @param name
+   * @throws CloudAppException
+   * @return
+   */
+  public CloudAppItem rename(CloudAppItem item, String name) throws CloudAppException;
 }
