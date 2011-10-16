@@ -8,19 +8,19 @@ Usage Example
     CloudApi api = new CloudApiImpl("Your email here", "Your password here");
 
     // Add a new bookmark
-    JSONObject json = api.createBookmark('Simon Gaeremynck's portfolio', 'gaeremynck.com');
+    CloudAppItem bookmark = api.createBookmark('Simon Gaeremynck's portfolio', 'gaeremynck.com');
 
     // Add file
-    JSONObject json = api.uploadFile(new File("/path/to/file"));
+    CloudAppItem file = api.uploadFile(new File("/path/to/file"));
 
     // Get the first 10 items, regardless of category who aren't in the trash.
-    JSONArray array = api.getItems(1, 10, null, false);
+    List<CloudAppItem> = api.getItems(1, 10, null, false);
 
-    // Get a specific item (http://cl.ly/bD5)
-    JSONObject json = api.getItem('bD5');
+    // Get a specific item (http://cl.ly/2wr4)
+    CloudAppItem item = api.getItem('http://cl.ly/2wr4');
     
-    // Delete item (by 'href' value)
-    api.deleteItem("http://my.cl.ly/items/1058986");
+    // Delete an item
+    api.delete(item);
     
 
 Requirements
@@ -36,7 +36,11 @@ A jar can be compiled trough maven by running the following command.
 
 However, this will skip the unit tests.
 If you want to have the unit tests, you will need to fill 
-in your email and password in the CloudApiTestCase.java file.
+in your email and password in src/test/resources/credentials.properties like so:
+cred_mail=me@email.com
+cred_password=mypassword
+
+Running a build can be done like so:
 `mvn clean install`
 
 
