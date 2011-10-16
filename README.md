@@ -25,8 +25,8 @@ Usage Example
 
 Requirements
 ------------
-Java
-Maven (only for building)
+* Java
+* Maven (only for building)
 
 
 Building
@@ -37,8 +37,8 @@ A jar can be compiled trough maven by running the following command.
 However, this will skip the unit tests.
 If you want to have the unit tests, you will need to fill 
 in your email and password in src/test/resources/credentials.properties like so:
-cred_mail=me@email.com
-cred_password=mypassword
+    cred_mail=me@email.com
+    cred_password=mypassword
 
 Running a build can be done like so:
 `mvn clean install`
