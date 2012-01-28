@@ -67,6 +67,15 @@ public class CloudAppItemImpl extends CloudAppModel implements CloudAppItem {
   public String getRedirectUrl() throws CloudAppException {
     return getString("redirect_url");
   }
+  
+  public String getThumbnailUrl() throws CloudAppException {
+    if (json.has("thumbnail_url")) {
+      return getString("thumbnail_url");
+    }
+    else {
+      return null;
+    }
+  }
 
   public String getSource() throws CloudAppException {
     return getString("source");

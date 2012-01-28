@@ -55,8 +55,8 @@ public class CloudAppItemsImplTest extends BaseTestCase {
   }
   
   @Test
-  public void simpleGetItemsTesT() throws CloudAppException {
-    List<CloudAppItem> l = api.getItems(1, 5, null, true, null);
+  public void simpleGetItemsTest() throws CloudAppException {
+    List<CloudAppItem> l = api.getItems(1, 5, null, false, null);
     Assert.assertNotNull(l);
   }
 }
