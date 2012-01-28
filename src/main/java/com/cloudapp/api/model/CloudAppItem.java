@@ -104,7 +104,7 @@ public interface CloudAppItem {
    * @return When this item was last updated. (or null if it has not been)
    * @throws CloudAppExtion
    */
-  Date getUploadedAt() throws CloudAppException;
+  Date getUpdatedAt() throws CloudAppException;
 
   /**
    * @return When this item was deleted. (or null if it has not been)

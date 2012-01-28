@@ -11,7 +11,7 @@ import com.cloudapp.api.CloudAppException;
 public abstract class CloudAppModel {
   protected JSONObject json;
   protected static final DateFormat format = new SimpleDateFormat(
-      "yyyy-MM-dd'T'HH:mm:ssz");
+      "yyyy-MM-dd'T'HH:mm:ss'Z'");
 
   protected String getString(String key) throws CloudAppException {
     try {

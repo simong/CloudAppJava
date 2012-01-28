@@ -81,9 +81,9 @@ public class CloudAppItemImpl extends CloudAppModel implements CloudAppItem {
     }
   }
 
-  public Date getUploadedAt() throws CloudAppException {
+  public Date getUpdatedAt() throws CloudAppException {
     try {
-      String d = getString("uploaded_at");
+      String d = getString("updated_at");
       return format.parse(d);
     } catch (ParseException e) {
       throw new CloudAppException(500, "Could not parse the date.", e);
