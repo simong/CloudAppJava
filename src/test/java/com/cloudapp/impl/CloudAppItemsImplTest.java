@@ -49,6 +49,8 @@ public class CloudAppItemsImplTest extends BaseTestCase {
   @Test
   public void testUpload() throws CloudAppException, JSONException {
     CloudAppItem o = api.upload(file);
+    Assert.assertNotNull(o);
     assertEquals("test_file.txt", o.getName());
+    Assert.assertNotNull(o.getCreatedAt());
   }
 }

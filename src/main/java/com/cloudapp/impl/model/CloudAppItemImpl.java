@@ -31,8 +31,8 @@ public class CloudAppItemImpl extends CloudAppModel implements CloudAppItem {
   }
 
   public boolean isTrashed() throws CloudAppException {
-    Date d = getDeletedAt();
-    return d != null;
+    String d = getString("deleted_at");
+    return (d == null || d == "null");
   }
 
   public String getUrl() throws CloudAppException {
