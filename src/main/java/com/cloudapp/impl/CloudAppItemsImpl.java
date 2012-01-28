@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
@@ -108,21 +109,25 @@ public class CloudAppItemsImpl extends CloudAppBase {
         perPage = 5;
       if (page == 0)
         page = 1;
+      
+      List<String> params = new ArrayList<String>();
+      params.add("page="+page);
+      params.add("per_page="+perPage);
+      params.add("deleted="+ (showDeleted ? "true" : "false"));
+      
+      if (type != null)
+      {
+        params.add("type=" + type.toString().toLowerCase());
+      }
+      if (source != null)
+      {
+        params.add("source=" + source);
+      }
 
-      HttpGet req = new HttpGet(ITEMS_URL);
+      String queryString = StringUtils.join(params.iterator(), "&");
+      HttpGet req = new HttpGet(ITEMS_URL + "?" + queryString);
       req.addHeader("Accept", "application/json");
-      HttpParams params = new BasicHttpParams();
-      params.setIntParameter("page", page);
-      params.setIntParameter("per_page", perPage);
-      params.setBooleanParameter("deleted", showDeleted);
-      if (type != null) {
-        params.setParameter("type", type.toString().toLowerCase());
-      }
-      if (source != null) {
-        params.setParameter("source", source);
-      }
-      req.setParams(params);
-
+      
       HttpResponse response = client.execute(req);
       int status = response.getStatusLine().getStatusCode();
       String responseBody = EntityUtils.toString(response.getEntity());

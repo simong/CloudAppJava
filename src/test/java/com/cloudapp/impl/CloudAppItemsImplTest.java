@@ -53,4 +53,10 @@ public class CloudAppItemsImplTest extends BaseTestCase {
     assertEquals("test_file.txt", o.getName());
     Assert.assertNotNull(o.getCreatedAt());
   }
+  
+  @Test
+  public void simpleGetItemsTesT() throws CloudAppException {
+    List<CloudAppItem> l = api.getItems(1, 5, null, true, null);
+    Assert.assertNotNull(l);
+  }
 }
