@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudapp.api.CloudAppException;
+import com.cloudapp.api.model.CloudAppProgressListener;
 import com.cloudapp.api.model.CloudAppItem;
 import com.cloudapp.impl.model.CloudAppItemImpl;
 
@@ -155,61 +156,67 @@ public class CloudAppItemsImpl extends CloudAppBase {
     }
   }
 
-  /**
-   * 
-   * {@inheritDoc}
-   * 
-   * @see com.cloudapp.api.CloudAppItems#upload(java.io.File)
-   */
-  public CloudAppItem upload(File file) throws CloudAppException {
-    try {
-      // Do a GET request so we have the S3 endpoint
-      HttpGet req = new HttpGet(NEW_ITEM_URL);
-      req.addHeader("Accept", "application/json");
-      HttpResponse response = client.execute(req);
-      int status = response.getStatusLine().getStatusCode();
-      String responseBody = EntityUtils.toString(response.getEntity());
-      if (status != 200)
-        throw new CloudAppException(status, responseBody, null);
-
-      JSONObject json = new JSONObject(responseBody);
-      if (!json.has("params")) {
-        // Something went wrong, maybe we crossed the treshold?
-        if (json.getInt("uploads_remaining") == 0) {
-          throw new CloudAppException(200, "Uploads remaining is 0", null);
-        }
-        throw new CloudAppException(500, "Missing params object from the CloudApp API.",
-            null);
-      }
-
-      return uploadToAmazon(json, file);
-
-    } catch (ClientProtocolException e) {
-      LOGGER.error("Something went wrong trying to contact the CloudApp API.", e);
-      throw new CloudAppException(500,
-          "Something went wrong trying to contact the CloudApp API", e);
-    } catch (IOException e) {
-      LOGGER.error("Something went wrong trying to contact the CloudApp API.", e);
-      throw new CloudAppException(500,
-          "Something went wrong trying to contact the CloudApp API.", e);
-    } catch (JSONException e) {
-      LOGGER.error("Something went wrong trying to handle JSON.", e);
-      throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
+    /**
+     *
+     * {@inheritDoc}
+     *
+     * @see com.cloudapp.api.CloudAppItems#upload(java.io.File)
+     */
+    public CloudAppItem upload(File file) throws CloudAppException {
+        return upload( file, CloudAppProgressListener.NO_OP );
     }
-  }
+
+    public CloudAppItem upload(File file, CloudAppProgressListener listener) throws CloudAppException {
+        try {
+            // Do a GET request so we have the S3 endpoint
+            HttpGet req = new HttpGet(NEW_ITEM_URL);
+            req.addHeader("Accept", "application/json");
+            HttpResponse response = client.execute(req);
+            int status = response.getStatusLine().getStatusCode();
+            String responseBody = EntityUtils.toString(response.getEntity());
+            if (status != 200)
+                throw new CloudAppException(status, responseBody, null);
+
+            JSONObject json = new JSONObject(responseBody);
+            if (!json.has("params")) {
+                // Something went wrong, maybe we crossed the treshold?
+                if (json.getInt("uploads_remaining") == 0) {
+                    throw new CloudAppException(200, "Uploads remaining is 0", null);
+                }
+                throw new CloudAppException(500, "Missing params object from the CloudApp API.",
+                        null);
+            }
+
+            return uploadToAmazon(json, file, listener);
+
+        } catch (ClientProtocolException e) {
+            LOGGER.error("Something went wrong trying to contact the CloudApp API.", e);
+            throw new CloudAppException(500,
+                    "Something went wrong trying to contact the CloudApp API", e);
+        } catch (IOException e) {
+            LOGGER.error("Something went wrong trying to contact the CloudApp API.", e);
+            throw new CloudAppException(500,
+                    "Something went wrong trying to contact the CloudApp API.", e);
+        } catch (JSONException e) {
+            LOGGER.error("Something went wrong trying to handle JSON.", e);
+            throw new CloudAppException(500, "Something went wrong trying to handle JSON.", e);
+        }
+    }
 
   /**
    * Uploads a file to S3
    * 
+   *
    * @param json
    * @param file
+   * @param listener
    * @return
    * @throws JSONException
    * @throws CloudAppException
    * @throws ParseException
    * @throws IOException
    */
-  private CloudAppItem uploadToAmazon(JSONObject json, File file) throws JSONException,
+  private CloudAppItem uploadToAmazon(JSONObject json, File file, CloudAppProgressListener listener) throws JSONException,
       CloudAppException, ParseException, IOException {
     JSONObject params = json.getJSONObject("params");
     MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
@@ -223,7 +230,7 @@ public class CloudAppItemsImpl extends CloudAppBase {
 
     // Add the actual file.
     // We have to use the 'file' parameter for the S3 storage.
-    InputStreamBody stream = new CloudAppInputStream(file);
+    InputStreamBody stream = new CloudAppInputStream(file, listener);
     entity.addPart("file", stream);
 
     HttpPost uploadRequest = new HttpPost(json.getString("url"));

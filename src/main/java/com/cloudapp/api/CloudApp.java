@@ -6,6 +6,7 @@ import java.util.List;
 import com.cloudapp.api.model.CloudAppAccount;
 import com.cloudapp.api.model.CloudAppAccountStats;
 import com.cloudapp.api.model.CloudAppItem;
+import com.cloudapp.api.model.CloudAppProgressListener;
 
 public interface CloudApp {
 
@@ -58,7 +59,7 @@ public interface CloudApp {
       throws CloudAppException;
 
   /**
-   * Dispatch an email containing a link to reset the accountÕs password.
+   * Dispatch an email containing a link to reset the accountï¿½s password.
    * 
    * @see http://developer.getcloudapp.com/forgot-password
    * @param email
@@ -94,7 +95,7 @@ public interface CloudApp {
 
   /**
    * Add or change the domain used for all links. Optionally, a URL may be provided to
-   * redirect visitors to the custom domainÕs root. <b>Pro users only</b>
+   * redirect visitors to the custom domainï¿½s root. <b>Pro users only</b>
    * 
    * @see http://developer.getcloudapp.com/set-custom-domain
    * @param domain
@@ -208,6 +209,18 @@ public interface CloudApp {
    * @return
    */
   public CloudAppItem upload(File file) throws CloudAppException;
+
+  /**
+   *
+   * @see http://developer.getcloudapp.com/upload-file
+   * @param file
+   *          The file you wish to upload.
+   * @param listener
+   *          To receive progress updates during upload
+   * @throws CloudAppException
+   * @return
+   */
+  public CloudAppItem upload(File file, CloudAppProgressListener listener) throws CloudAppException;
 
   /**
    * Deletes an item
