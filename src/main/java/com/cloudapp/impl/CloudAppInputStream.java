@@ -30,57 +30,57 @@ import org.apache.http.entity.mime.content.InputStreamBody;
 
 public class CloudAppInputStream extends InputStreamBody {
 
-    private final long length;
-    private final CloudAppProgressListener listener;
+  private final long length;
+  private final CloudAppProgressListener listener;
 
-    public CloudAppInputStream(InputStream in, String filename, long length, CloudAppProgressListener listener) {
-        super(in, filename);
-        this.length = length;
-        this.listener = (listener == null) ? CloudAppProgressListener.NO_OP : listener;
-    }
+  public CloudAppInputStream(InputStream in, String filename, long length, CloudAppProgressListener listener) {
+    super(in, filename);
+    this.length = length;
+    this.listener = (listener == null) ? CloudAppProgressListener.NO_OP : listener;
+  }
 
-    protected CloudAppInputStream(File file, CloudAppProgressListener listener) throws FileNotFoundException {
-        this(new FileInputStream(file), file.getName(), file.length(), listener);
+  protected CloudAppInputStream(File file, CloudAppProgressListener listener) throws FileNotFoundException {
+    this(new FileInputStream(file), file.getName(), file.length(), listener);
+  }
+
+  @Override
+  public void writeTo(OutputStream out) throws IOException {
+    super.writeTo( new ListeningOutputStream(out) );
+  }
+
+  @Override
+  public long getContentLength() {
+    return length;
+  }
+
+  private class ListeningOutputStream extends FilterOutputStream {
+
+    private long bytesWritten;
+
+    public ListeningOutputStream(OutputStream out) {
+      super(out);
+      bytesWritten = 0L;
     }
 
     @Override
-    public void writeTo(OutputStream out) throws IOException {
-        super.writeTo( new ListeningOutputStream(out) );
+    public void write(int b) throws IOException {
+      out.write(b);
+      listener.transferred(++bytesWritten, length);
     }
 
     @Override
-    public long getContentLength() {
-        return length;
+    public void write(byte[] b) throws IOException {
+      out.write(b);
+      bytesWritten += b.length;
+      listener.transferred(bytesWritten, length);
     }
-    
-    private class ListeningOutputStream extends FilterOutputStream {
-        
-        private long bytesWritten;
 
-        public ListeningOutputStream(OutputStream out) {
-            super(out);
-            bytesWritten = 0L;
-        }
-        
-        @Override
-        public void write(int b) throws IOException {
-            out.write(b);
-            listener.transferred(++bytesWritten, length);
-        }
-        
-        @Override
-        public void write(byte[] b) throws IOException {
-            out.write(b);
-            bytesWritten += b.length;
-            listener.transferred(bytesWritten, length);
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            out.write(b, off, len);
-            bytesWritten += (len - off);
-            listener.transferred(bytesWritten, length);
-        }
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      out.write(b, off, len);
+      bytesWritten += (len - off);
+      listener.transferred(bytesWritten, length);
     }
+  }
 
 }
