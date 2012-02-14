@@ -3,6 +3,7 @@ package com.cloudapp.impl;
 import java.io.File;
 import java.util.List;
 
+import com.cloudapp.api.model.CloudAppProgressListener;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
@@ -184,6 +185,16 @@ public class CloudAppImpl implements CloudApp {
    */
   public CloudAppItem upload(File file) throws CloudAppException {
     return items.upload(file);
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see com.cloudapp.api.CloudAppItems#upload(java.io.File, com.cloudapp.api.model.CloudAppProgressListener)
+   */
+  public CloudAppItem upload(File file, CloudAppProgressListener listener) throws CloudAppException {
+    return items.upload(file, listener);
   }
 
   /**

@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudapp.api.CloudAppException;
+import com.cloudapp.api.model.CloudAppProgressListener;
 import com.cloudapp.api.model.CloudAppItem;
 import com.cloudapp.impl.model.CloudAppItemImpl;
 
@@ -162,6 +163,10 @@ public class CloudAppItemsImpl extends CloudAppBase {
    * @see com.cloudapp.api.CloudAppItems#upload(java.io.File)
    */
   public CloudAppItem upload(File file) throws CloudAppException {
+    return upload( file, CloudAppProgressListener.NO_OP );
+  }
+
+  public CloudAppItem upload(File file, CloudAppProgressListener listener) throws CloudAppException {
     try {
       // Do a GET request so we have the S3 endpoint
       HttpGet req = new HttpGet(NEW_ITEM_URL);
@@ -182,7 +187,7 @@ public class CloudAppItemsImpl extends CloudAppBase {
             null);
       }
 
-      return uploadToAmazon(json, file);
+      return uploadToAmazon(json, file, listener);
 
     } catch (ClientProtocolException e) {
       LOGGER.error("Something went wrong trying to contact the CloudApp API.", e);
@@ -209,7 +214,7 @@ public class CloudAppItemsImpl extends CloudAppBase {
    * @throws ParseException
    * @throws IOException
    */
-  private CloudAppItem uploadToAmazon(JSONObject json, File file) throws JSONException,
+  private CloudAppItem uploadToAmazon(JSONObject json, File file, CloudAppProgressListener listener) throws JSONException,
       CloudAppException, ParseException, IOException {
     JSONObject params = json.getJSONObject("params");
     MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
@@ -223,7 +228,7 @@ public class CloudAppItemsImpl extends CloudAppBase {
 
     // Add the actual file.
     // We have to use the 'file' parameter for the S3 storage.
-    InputStreamBody stream = new CloudAppInputStream(file);
+    InputStreamBody stream = new CloudAppInputStream(file, listener);
     entity.addPart("file", stream);
 
     HttpPost uploadRequest = new HttpPost(json.getString("url"));
