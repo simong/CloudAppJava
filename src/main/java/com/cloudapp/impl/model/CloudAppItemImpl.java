@@ -32,7 +32,7 @@ public class CloudAppItemImpl extends CloudAppModel implements CloudAppItem {
 
   public boolean isTrashed() throws CloudAppException {
     String d = getString("deleted_at");
-    return (d == null || d == "null");
+    return !(d == null || d == "null");
   }
 
   public String getUrl() throws CloudAppException {
