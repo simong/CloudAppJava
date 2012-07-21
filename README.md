@@ -5,7 +5,7 @@ These set of Java classes allow you to easily talk to the CloudApp REST Apis.
 Usage Example
 -------------
 
-    CloudApi api = new CloudApiImpl("Your email here", "Your password here");
+    CloudApp api = new CloudAppImpl("Your email here", "Your password here");
 
     // Add a new bookmark
     CloudAppItem bookmark = api.createBookmark('Simon Gaeremynck's portfolio', 'gaeremynck.com');
