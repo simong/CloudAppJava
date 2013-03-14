@@ -74,4 +74,14 @@ public class CloudAppAccountImpl extends CloudAppModel implements CloudAppAccoun
     }
   }
 
+  @Override
+  public Date SubscriptionExpiresAt() throws CloudAppException {
+	try {
+	  String d = getString("subscription_expires_at");
+	  return formatBis.parse(d);
+	} catch (ParseException e) {
+	  throw new CloudAppException(500, "Could not parse the date.", e);
+	}
+  }
+
 }

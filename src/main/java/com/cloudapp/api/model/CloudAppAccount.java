@@ -57,4 +57,9 @@ public interface CloudAppAccount {
    */
   public Date ActivatedAt() throws CloudAppException;
 
+  /**
+   * @return The date you suscription expires if any
+   */
+  public Date SubscriptionExpiresAt() throws CloudAppException;
+
 }
